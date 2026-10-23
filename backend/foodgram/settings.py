@@ -145,7 +145,7 @@ REST_FRAMEWORK = {
 DJOSER = {
     'HIDE_USERS': False,
     'PERMISSIONS': {
-        'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
+        'user': ['api.permissions.CurrentUserOrReadOnly'],
         'user_list': ['rest_framework.permissions.AllowAny'],
     },
     'SERIALIZERS': {
@@ -153,3 +153,6 @@ DJOSER = {
         'current_user': 'api.serializers.UserSerializer',
     },
 }
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
