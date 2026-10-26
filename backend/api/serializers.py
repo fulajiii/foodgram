@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from rest_framework import serializers
 
-from recipes.models import Ingredient, Recipe, Tag
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 
 User = get_user_model()
 
@@ -79,3 +79,53 @@ class UserWithRecipesSerializer(UserSerializer):
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
+
+
+class RecipeIngredientSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='ingredient.id')
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit'
+    )
+
+    class Meta:
+        model = RecipeIngredient
+        fields = ('id', 'name', 'measurement_unit', 'amount',)
+
+
+class RecipeReadSerializer(serializers.ModelSerializer):
+    tags = TagSerializer(many=True, read_only=True)
+    author = UserSerializer(read_only=True)
+    ingredients = RecipeIngredientSerializer(
+        source='recipe_ingredients', many=True, read_only=True
+    )
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id',
+            'tags',
+            'author',
+            'ingredients',
+            'is_favorited',
+            'is_in_shopping_cart',
+            'name',
+            'image',
+            'text',
+            'cooking_time',
+        )
+
+    def get_is_favorited(self, obj):
+        user = self.context['request'].user
+        if not user.is_authenticated:
+            return False
+        return user.favorites.filter(recipe=obj).exists()
+
+    def get_is_in_shopping_cart(self, obj):
+        user = self.context['request'].user
+        if not user.is_authenticated:
+            return False
+        return user.shoppingcarts.filter(recipe=obj).exists()
+

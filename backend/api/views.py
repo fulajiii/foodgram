@@ -7,12 +7,13 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.models import Ingredient, Tag
+from recipes.models import Ingredient, Recipe, Tag
 from users.models import Subscription
 from .filters import IngredientFilter
 from .serializers import (
     AvatarSerializer,
     IngredientSerializer,
+    RecipeReadSerializer,
     TagSerializer,
     UserWithRecipesSerializer,
 )
@@ -111,3 +112,8 @@ class UserViewSet(DjoserUserViewSet):
             page, many=True, context={'request': request}
         )
         return self.get_paginated_response(serializer.data)
+
+
+class RecipeViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeReadSerializer
