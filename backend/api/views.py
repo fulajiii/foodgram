@@ -14,6 +14,7 @@ from .serializers import (
     AvatarSerializer,
     IngredientSerializer,
     RecipeReadSerializer,
+    RecipeWriteSerializer,
     TagSerializer,
     UserWithRecipesSerializer,
 )
@@ -114,6 +115,13 @@ class UserViewSet(DjoserUserViewSet):
         return self.get_paginated_response(serializer.data)
 
 
-class RecipeViewSet(viewsets.ReadOnlyModelViewSet):
+class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeReadSerializer
+
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return RecipeReadSerializer
+        return RecipeWriteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)

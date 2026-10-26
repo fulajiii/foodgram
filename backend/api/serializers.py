@@ -5,6 +5,7 @@ from django.core.files.base import ContentFile
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from rest_framework import serializers
 
+from recipes.constants import MIN_INGREDIENT_AMOUNT
 from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 
 User = get_user_model()
@@ -21,7 +22,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ingredient
-        fields = ('id', 'name', 'measurement_unit')
+        fields = ('id', 'name', 'measurement_unit',)
 
 
 class Base64ImageField(serializers.ImageField):
@@ -129,3 +130,45 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             return False
         return user.shoppingcarts.filter(recipe=obj).exists()
 
+
+class IngredientAmountSerializer(serializers.Serializer):
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    amount = serializers.IntegerField(min_value=MIN_INGREDIENT_AMOUNT)
+
+
+class RecipeWriteSerializer(serializers.ModelSerializer):
+    ingredients = IngredientAmountSerializer(many=True)
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(), many=True
+    )
+    image = Base64ImageField()
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'ingredients',
+            'tags',
+            'image',
+            'name',
+            'text',
+            'cooking_time',
+        )
+
+    def create(self, validated_data):
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
+        recipe = Recipe.objects.create(**validated_data)
+        recipe.tags.set(tags)
+        for item in ingredients:
+            RecipeIngredient.objects.create(
+                recipe=recipe,
+                ingredient=item['id'],
+                amount=item['amount'],
+            )
+        return recipe
+
+    def to_representation(self, instance):
+        return RecipeReadSerializer(
+            instance,
+            context=self.context,
+        ).data
