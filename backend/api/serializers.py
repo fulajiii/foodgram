@@ -154,6 +154,21 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             'cooking_time',
         )
 
+    def validate_ingredients(self, value):
+        if not value:
+            raise serializers.ValidationError('Нужен хотя бы один ингредиент.')
+        ingredients = [item['id'] for item in value]
+        if len(ingredients) != len(set(ingredients)):
+            raise serializers.ValidationError('В ингредиентах есть повтор.')
+        return value
+
+    def validate_tags(self, value):
+        if not value:
+            raise serializers.ValidationError('Нужен хотя бы один тег.')
+        if len(value) != len(set(value)):
+            raise serializers.ValidationError('В тегах есть повтор.')
+        return value
+
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
@@ -172,3 +187,5 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             instance,
             context=self.context,
         ).data
+
+
