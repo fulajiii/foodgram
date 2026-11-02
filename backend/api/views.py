@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from recipes.models import Ingredient, Recipe, Tag
 from users.models import Subscription
 from .filters import IngredientFilter
+from .permissions import IsAuthorOrReadOnly
 from .serializers import (
     AvatarSerializer,
     IngredientSerializer,
@@ -117,6 +118,7 @@ class UserViewSet(DjoserUserViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
+    permission_classes = (IsAuthorOrReadOnly,)
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
