@@ -169,23 +169,44 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('В тегах есть повтор.')
         return value
 
+    def validate(self, attrs):
+        for field in ('ingredients', 'tags'):
+            if field not in attrs:
+                raise serializers.ValidationError(
+                    {field: 'Обязательное поле.'}
+                )
+        return attrs
+
+    def save_ingredients(self, recipe, ingredients):
+        recipe_ingredients = [
+            RecipeIngredient(
+                recipe=recipe,
+                ingredient=item['id'],
+                amount=item['amount'],
+            )
+            for item in ingredients
+        ]
+        RecipeIngredient.objects.bulk_create(recipe_ingredients)
+
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
-        for item in ingredients:
-            RecipeIngredient.objects.create(
-                recipe=recipe,
-                ingredient=item['id'],
-                amount=item['amount'],
-            )
+        self.save_ingredients(recipe, ingredients)
         return recipe
+
+    def update(self, instance, validated_data):
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
+        instance = super().update(instance, validated_data)
+        instance.tags.set(tags)
+        instance.recipe_ingredients.all().delete()
+        self.save_ingredients(instance, ingredients)
+        return instance
 
     def to_representation(self, instance):
         return RecipeReadSerializer(
             instance,
             context=self.context,
         ).data
-
-
