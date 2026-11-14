@@ -72,11 +72,20 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
 
 
 class UserWithRecipesSerializer(UserSerializer):
-    recipes = RecipeMinifiedSerializer(many=True, read_only=True)
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count',)
+
+    def get_recipes(self, obj):
+        recipes = obj.recipes.all()
+        limit = self.context['request'].query_params.get('recipes_limit')
+        if limit and limit.isdigit():
+            recipes = recipes[:int(limit)]
+        return RecipeMinifiedSerializer(
+            recipes, many=True, context=self.context
+        ).data
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
