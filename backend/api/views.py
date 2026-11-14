@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import status, viewsets
@@ -224,3 +224,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'attachment; filename="shopping_cart.txt"'
         )
         return response
+
+    @action(
+        detail=True,
+        methods=['get',],
+        url_path='get-link',
+    )
+    def get_link(self, request, pk=None):
+        recipe = get_object_or_404(Recipe, pk=pk)
+        link = request.build_absolute_uri(f'/s/{recipe.pk}/')
+        return Response({'short-link': link})
+
+
+def recipe_short_link(request, pk):
+    recipe = get_object_or_404(Recipe, pk=pk)
+    return redirect(f'/recipes/{recipe.pk}/')
