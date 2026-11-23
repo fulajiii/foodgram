@@ -1,7 +1,7 @@
 import { Card, Title, Pagination, CardList, Container, Main, CheckboxGroup  } from '../../components'
 import styles from './styles.module.css'
 import { useRecipes } from '../../utils/index.js'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import api from '../../api'
 import MetaTags from 'react-meta-tags'
 
@@ -16,23 +16,44 @@ const Favorites = ({ updateOrders }) => {
     tagsValue,
     handleTagsChange,
     setTagsValue,
-    handleLike,
     handleAddToCart
   } = useRecipes()
-  
-  const getRecipes = ({ page = 1, tags }) => {
+
+  const [refresh, setRefresh] = useState(0)
+
+  useEffect(() => {
+    let current = true
     api
-      .getRecipes({ page, is_favorited: Number(true), tags })
-      .then(res => {
-        const { results, count } = res
-        setRecipes(results)
-        setRecipesCount(count)
+      .getRecipes({ page: recipesPage, is_favorited: 1, tags: tagsValue })
+      .then(({ results, count }) => {
+        if (current) {
+          setRecipes(results)
+          setRecipesCount(count)
+        }
+      })
+      .catch(({ detail, errors }) => {
+        if (!current) return
+        if (detail && recipesPage > 1) {
+          setRecipesPage(recipesPage - 1)
+        } else if (errors || detail) {
+          alert(errors || detail)
+        }
+      })
+    return () => {
+      current = false
+    }
+  }, [recipesPage, tagsValue, refresh, setRecipes, setRecipesCount, setRecipesPage])
+
+  const removeFavorite = ({ id }) => {
+    api.removeFromFavorites({ id })
+      .then(() => {
+        setRecipes(current => current.filter(recipe => recipe.id !== id))
+        setRefresh(current => current + 1)
+      })
+      .catch(({ errors }) => {
+        if (errors) alert(errors)
       })
   }
-
-  useEffect(_ => {
-    getRecipes({ page: recipesPage, tags: tagsValue })
-  }, [recipesPage, tagsValue])
 
   useEffect(_ => {
     api.getTags()
@@ -64,7 +85,7 @@ const Favorites = ({ updateOrders }) => {
           {...card}
           key={card.id}
           updateOrders={updateOrders}
-          handleLike={handleLike}
+          handleLike={removeFavorite}
           handleAddToCart={handleAddToCart}
         />)}
       </CardList>}
