@@ -49,4 +49,3 @@ services:
       frontend:
         condition: service_completed_successfully
     restart: always
-    
