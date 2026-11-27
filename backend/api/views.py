@@ -158,7 +158,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        methods=['post',],
+        methods=['post'],
         permission_classes=(IsAuthenticated,),
     )
     def favorite(self, request, pk=None):
@@ -185,7 +185,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        methods=['post',],
+        methods=['post'],
         permission_classes=(IsAuthenticated,),
     )
     def shopping_cart(self, request, pk=None):
@@ -229,7 +229,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        methods=['get',],
+        methods=['get'],
         url_path='get-link',
     )
     def get_link(self, request, pk=None):
